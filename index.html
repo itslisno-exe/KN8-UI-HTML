@@ -1,0 +1,1153 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>KN8 LOADER</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800;900&family=Inter:wght@600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap'); 
+            
+            :root {
+                --bg: #080808;
+                --surface: #101010;
+                --surface2: #151515;
+                --border: #292929;
+                --red: #ed1010;
+                --red-bright: #ff2020;
+                --text: #ffffff;
+                --muted: #b0b0b0;
+            }
+
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+
+            html,body {
+                width: 100%;
+                height: 100%;
+                background: var(--bg);
+            }
+
+            body {
+                position: relative;
+                isolation: isolate;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                border: 1px solid #383838;
+                color: var(--text);
+                font: 14px Inter, sans-serif;
+                -webkit-font-smoothing: antialiased;
+                direction: ltr !important;
+            }
+
+            body.lang-ar {
+                font-family: 'Cairo', sans-serif !important;
+            }
+
+            html,body,body * {
+                cursor: none !important;
+            }
+
+            body::before {
+                content: "";
+                position: fixed;
+                inset: -20%;
+                z-index: -3;
+                pointer-events: none;
+                background: radial-gradient(ellipse at 50% 0%,rgba(255,0,0,.2),transparent 50%),radial-gradient(ellipse at 90% 80%,rgba(180,0,0,.12),transparent 45%);
+                animation: ambient 12s ease-in-out infinite alternate;
+            }
+
+            button,a {
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            button {
+                font-family: inherit;
+            }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: #080808;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #6a2020;
+                border-radius: 10px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--red);
+            }
+
+            #cursor-glow {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 180px;
+                height: 180px;
+                border-radius: 50%;
+                pointer-events: none;
+                z-index: 9998;
+                opacity: 0;
+                background: radial-gradient(circle,rgba(255,0,0,.1) 0%,rgba(220,0,0,.05) 30%,transparent 70%);
+                transform: translate(-50%,-50%);
+                will-change: left,top;
+                transition: opacity .2s ease;
+            }
+
+            #cursor-dot {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 7px;
+                height: 7px;
+                border-radius: 50%;
+                background: #ff2020;
+                box-shadow: 0 0 10px rgba(255,0,0,.8);
+                transform: translate(-50%,-50%);
+                pointer-events: none;
+                z-index: 9999;
+                opacity: 0;
+                will-change: left,top;
+                transition: opacity .2s ease;
+            }
+
+            #splash-screen {
+                position: fixed;
+                inset: 0;
+                z-index: 999;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 18px;
+                background: radial-gradient(ellipse at center,rgba(255,0,0,.1),transparent 48%),#080808;
+                transition: opacity .45s ease,visibility .45s ease;
+            }
+
+            #splash-screen.hidden {
+                opacity: 0;
+                visibility: hidden;
+                pointer-events: none;
+            }
+
+            .splash-logo-wrapper {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+                animation: riseIn .8s cubic-bezier(.16,1,.3,1) both;
+            }
+
+            .splash-logo {
+                font-size: 40px;
+                font-weight: 900;
+                letter-spacing: 4px;
+                text-shadow: 0 0 35px rgba(255,0,0,.25);
+            }
+
+            .splash-logo span {
+                color: var(--red-bright);
+            }
+
+            .splash-sub {
+                color: #ccc;
+                font: 700 12px 'JetBrains Mono', 'Cairo', sans-serif;
+                letter-spacing: 2px;
+            }
+
+            .splash-console {
+                height: 20px;
+                margin-top: 3px;
+                color: #ddd;
+                font: 700 11px 'JetBrains Mono', 'Cairo', sans-serif;
+                letter-spacing: 1px;
+            }
+
+            .progress-track,.modal-progress-track {
+                width: 280px;
+                height: 5px;
+                overflow: hidden;
+                background: #1b1b1b;
+                border: 1px solid #404040;
+                border-radius: 10px;
+            }
+
+            .progress-fill,.modal-progress-fill {
+                width: 0;
+                height: 100%;
+                background: linear-gradient(90deg,#9b0000,#ff1717,#ff5252);
+                box-shadow: 0 0 15px rgba(255,0,0,.8);
+                border-radius: 10px;
+                transition: width .12s linear;
+            }
+
+            #loader-modal {
+                position: fixed;
+                inset: 0;
+                z-index: 500;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(0,0,0,.82);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity .22s ease,visibility .22s ease;
+            }
+
+            #loader-modal.active {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            .modal-box {
+                position: relative;
+                width: 340px;
+                padding: 30px 25px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+                overflow: hidden;
+                border: 1px solid #752525;
+                border-radius: 16px;
+                background: linear-gradient(145deg,#1c1212,#0c0c0c 65%);
+                box-shadow: 0 25px 80px #000,0 0 40px rgba(255,0,0,.15);
+                transform: translateY(10px) scale(.96);
+                transition: transform .3s cubic-bezier(.16,1,.3,1);
+            }
+
+            .modal-box::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 10%;
+                width: 80%;
+                height: 2px;
+                background: linear-gradient(90deg,transparent,#ff2020,transparent);
+            }
+
+            #loader-modal.active .modal-box {
+                transform: translateY(0) scale(1);
+            }
+
+            /* تحويل دائرة التحميل إلى شكل دائري حقيقي بالكامل */
+            .spinner {
+                width: 46px;
+                height: 46px;
+                border: 3px solid rgba(255, 255, 255, 0.1);
+                border-top-color: var(--red-bright);
+                border-right-color: var(--red);
+                border-radius: 50%;
+                animation: spin .65s linear infinite;
+                box-shadow: 0 0 20px rgba(255,0,0,0.3);
+            }
+
+            .modal-info {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                text-align: center;
+            }
+
+            .modal-filename {
+                color: #ffffff;
+                font: 800 14px 'JetBrains Mono', 'Cairo', sans-serif;
+                letter-spacing: 1px;
+            }
+
+            .modal-status {
+                color: #ff6666;
+                font: 700 11px 'JetBrains Mono', 'Cairo', sans-serif;
+                letter-spacing: 1.2px;
+            }
+
+            .modal-progress-track {
+                width: 100%;
+            }
+
+            /* تحويل الإشعار (Notification Toast) إلى تصميم دائري ناعم */
+            #notification-toast {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 1000;
+                width: 320px;
+                background: #0e0e0e;
+                border: 1px solid #4a1818;
+                border-radius: 14px;
+                box-shadow: 0 12px 35px rgba(0,0,0,0.9), 0 0 20px rgba(255,0,0,0.25);
+                display: flex;
+                align-items: center;
+                padding: 14px 18px;
+                gap: 14px;
+                transform: translateY(80px);
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+
+            .toast-red-bar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 5px;
+                background: var(--red);
+                border-top-left-radius: 14px;
+                border-bottom-left-radius: 14px;
+                box-shadow: 0 0 10px var(--red);
+            }
+
+            #notification-toast.show {
+                transform: translateY(0);
+                opacity: 1;
+                visibility: visible;
+            }
+
+            /* تحويل النقطة المشعة في الإشعار إلى دائرة كاملة متوهجة */
+            .toast-circle {
+                width: 10px;
+                height: 10px;
+                background: var(--red-bright);
+                border-radius: 50%;
+                box-shadow: 0 0 12px var(--red-bright), 0 0 20px var(--red-bright);
+                flex-shrink: 0;
+            }
+
+            .toast-content {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .toast-title {
+                color: #ffffff;
+                font: 900 12px 'JetBrains Mono', 'Cairo', sans-serif;
+                letter-spacing: 1px;
+            }
+
+            .toast-desc {
+                color: #dddddd;
+                font: 700 11px 'JetBrains Mono', 'Cairo', sans-serif;
+                letter-spacing: 0.5px;
+            }
+
+            #canvas-bg {
+                position: absolute;
+                inset: 0;
+                z-index: 1;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+            }
+
+            .titlebar {
+                position: relative;
+                z-index: 100;
+                height: 44px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding-left: 14px;
+                padding-right: 0px;
+                background: rgba(12,12,12,.96);
+                border-bottom: 1px solid #333333;
+                cursor: move;
+            }
+
+            .titlebar-left {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                pointer-events: none;
+            }
+
+            .brand-tag {
+                padding: 4px 10px;
+                border: 1px solid #ff3535;
+                border-radius: 4px;
+                background: linear-gradient(135deg,#ff2424,#a90000);
+                color: white;
+                font-size: 11px;
+                font-weight: 900;
+                letter-spacing: 1.2px;
+                box-shadow: 0 0 15px rgba(255,0,0,.25);
+            }
+
+            .titlebar-title {
+                color: #ffffff;
+                font-size: 13px;
+                font-weight: 900;
+                letter-spacing: 1.5px;
+            }
+
+            .topbar-controls {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-left: 12px;
+                pointer-events: auto;
+            }
+
+            .search-input {
+                background: #181818;
+                color: #ffffff;
+                border: 1px solid #444;
+                border-radius: 6px;
+                padding: 5px 10px;
+                font: 700 11px 'JetBrains Mono', 'Cairo', sans-serif;
+                outline: none;
+                width: 130px;
+                transition: border-color 0.2s ease, width 0.2s ease;
+            }
+
+            .search-input:focus {
+                border-color: var(--red);
+                width: 160px;
+            }
+
+            .lang-select {
+                background: #181818;
+                color: #ffffff;
+                border: 1px solid #444;
+                border-radius: 6px;
+                padding: 5px 8px;
+                font: 700 11px 'JetBrains Mono', 'Cairo', sans-serif;
+                outline: none;
+                transition: border-color 0.2s ease;
+            }
+
+            .lang-select:hover, .lang-select:focus {
+                border-color: var(--red);
+            }
+
+            .titlebar-controls {
+                height: 100%;
+                display: flex;
+            }
+
+            .control-btn {
+                width: 44px;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 0;
+                background: transparent;
+                color: #ccc;
+                font-size: 14px;
+                transition: background .15s ease, color .15s ease;
+            }
+
+            .control-btn:hover {
+                background: #2a2a2a;
+                color: white;
+            }
+
+            .control-btn.close:hover {
+                background: #e50909;
+                color: white;
+                box-shadow: 0 0 20px rgba(255,0,0,.4);
+            }
+
+            .app-container {
+                position: relative;
+                z-index: 10;
+                flex: 1;
+                min-height: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                padding: 16px;
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+
+            .panels-grid {
+                display: grid;
+                grid-template-columns: repeat(2,minmax(0,1fr));
+                gap: 12px;
+            }
+
+            .panel-card {
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px;
+                overflow: hidden;
+                border: 1px solid #333333;
+                border-radius: 8px;
+                background: linear-gradient(145deg,rgba(24,24,24,.98),rgba(10,10,10,.98));
+                box-shadow: 0 6px 20px rgba(0,0,0,.25);
+                animation: cardEnter .58s cubic-bezier(.16,1,.3,1) both;
+                transition: border-color .2s ease,transform .2s ease,box-shadow .2s ease;
+            }
+
+            .panel-card:hover {
+                transform: translateY(-2px);
+                border-color: #902525;
+                box-shadow: 0 10px 30px rgba(0,0,0,.4),0 0 20px rgba(255,0,0,.08);
+            }
+
+            .panel-card.span-right {
+                grid-column: 2;
+            }
+
+            .preview-box {
+                position: relative;
+                isolation: isolate;
+                width: 100%;
+                height: 95px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                border: 1px solid #383838;
+                border-radius: 6px;
+                background: radial-gradient(ellipse at center,rgba(255,0,0,.12),transparent 65%),#101010;
+            }
+
+            .preview-text {
+                z-index: 2;
+                color: #ffffff;
+                opacity: .8;
+                font: 900 26px 'JetBrains Mono', monospace;
+                letter-spacing: 4px;
+            }
+
+            .card-details-row {
+                min-height: 26px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .loader-name {
+                color: #ffffff;
+                font-size: 15px;
+                font-weight: 900;
+                letter-spacing: 1px;
+            }
+
+            .loader-status-tag {
+                flex-shrink: 0;
+                padding: 4px 8px;
+                border: 1px solid #523030;
+                border-radius: 4px;
+                background: #2a1414;
+                color: #ff9999;
+                font: 800 10px 'JetBrains Mono', 'Cairo', sans-serif;
+                letter-spacing: 1px;
+            }
+
+            .panel-btn {
+                position: relative;
+                isolation: isolate;
+                width: 100%;
+                min-height: 38px;
+                padding: 10px 0;
+                overflow: hidden;
+                border: 1px solid #ff3030;
+                border-radius: 6px;
+                background: linear-gradient(135deg,#f01818,#c90000);
+                color: white;
+                font-size: 12px;
+                font-weight: 900;
+                letter-spacing: 1.8px;
+                box-shadow: 0 3px 12px rgba(255,0,0,.18);
+                transition: background .16s ease, transform .16s ease, box-shadow .16s ease;
+            }
+
+            .panel-btn:hover {
+                background: linear-gradient(135deg,#ff3030,#ed0000);
+                box-shadow: 0 0 18px rgba(255,0,0,.45);
+                transform: translateY(-1px);
+            }
+
+            .footer {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 12px;
+                min-height: 44px;
+                margin-top: 14px;
+                padding-top: 12px;
+                border-top: 1px solid #333333;
+                flex-wrap: wrap;
+            }
+
+            .social-links {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+
+            .icon-link {
+                height: 34px;
+                padding: 0 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid #383838;
+                border-radius: 6px;
+                background: #151515;
+                color: #ddd;
+                text-decoration: none;
+                font: 700 10px 'JetBrains Mono', 'Cairo', sans-serif;
+                gap: 5px;
+                transition: background .15s ease, color .15s ease, border-color .15s ease;
+            }
+
+            .icon-link svg {
+                width: 15px;
+                height: 15px;
+                fill: currentColor;
+            }
+
+            .icon-link:hover {
+                border-color: #ff2020;
+                background: #e50909;
+                color: white;
+                box-shadow: 0 0 15px rgba(255,0,0,.35);
+            }
+
+            .copyright {
+                color: #cccccc;
+                font: 800 11px 'JetBrains Mono', 'Cairo', sans-serif;
+                letter-spacing: .8px;
+            }
+
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+
+            @keyframes riseIn {
+                from { opacity: 0; transform: translateY(12px); filter: blur(4px); }
+                to { opacity: 1; transform: translateY(0); filter: blur(0); }
+            }
+
+            @keyframes cardEnter {
+                from { opacity: 0; transform: translateY(12px) scale(.985); }
+                to { opacity: 1; transform: translateY(0); scale(1); }
+            }
+
+            @keyframes ambient {
+                from { transform: scale(1) translate3d(0,0,0); }
+                to { transform: scale(1.08) translate3d(-1%,1%,0); }
+            }
+        </style>
+    </head>
+    <body>
+        <div id="cursor-glow"></div>
+        <div id="cursor-dot"></div>
+        
+        <!-- Splash Screen -->
+        <div id="splash-screen">
+            <div class="splash-logo-wrapper">
+                <div class="splash-logo">
+                    KN<span>8</span>
+                    LOADER
+                </div>
+                <div class="splash-sub" id="txt-splash-sub">SECURE SYSTEM INITIALIZATION</div>
+            </div>
+            <div class="splash-console" id="splash-status">LOADING KERNEL MODULES...</div>
+            <div class="progress-track">
+                <div class="progress-fill" id="progress-bar"></div>
+            </div>
+        </div>
+
+        <!-- Download Modal -->
+        <div id="loader-modal">
+            <div class="modal-box">
+                <div class="spinner"></div>
+                <div class="modal-info">
+                    <span class="modal-filename" id="modal-filename-text">DOWNLOADING FILE...</span>
+                    <span class="modal-status" id="txt-modal-status">FETCHING DATA...</span>
+                </div>
+                <div class="modal-progress-track">
+                    <div class="modal-progress-fill" id="modal-progress-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="notification-toast">
+            <div class="toast-red-bar"></div>
+            <div class="toast-circle"></div>
+            <div class="toast-content">
+                <span class="toast-title" id="toast-title-text">DOWNLOAD COMPLETE</span>
+                <span class="toast-desc" id="toast-desc-text">File downloaded successfully.</span>
+            </div>
+        </div>
+
+        <canvas id="canvas-bg"></canvas>
+        <div class="titlebar" id="drag-region">
+            <div class="titlebar-left">
+                <span class="brand-tag">KN8</span>
+                <span class="titlebar-title">KN8 LOADER</span>
+                <div class="topbar-controls">
+                    <input type="text" id="search-input" class="search-input" placeholder="Search..." oninput="filterLoaders(this.value)">
+                    <select id="lang-select" class="lang-select" onchange="changeLanguage(this.value)">
+                        <option value="en">English</option>
+                        <option value="ru">Русский</option>
+                        <option value="zh">中文</option>
+                        <option value="ar">العربية</option>
+                    </select>
+                </div>
+            </div>
+            <div class="titlebar-controls">
+                <button class="control-btn" id="btn-minimize" title="Minimize">&#8211;</button>
+                <button class="control-btn" id="btn-maximize" title="Maximize">&#9744;</button>
+                <button class="control-btn close" id="btn-close" title="Close">&#10005;</button>
+            </div>
+        </div>
+        <div class="app-container">
+            <div class="panels-grid" id="loaders-grid">
+                <div class="panel-card" data-name="orbit mw3">
+                    <div class="preview-box">
+                        <span class="preview-text">MW3</span>
+                    </div>
+                    <div class="card-details-row">
+                        <span class="loader-name">ORBIT</span>
+                        <span class="loader-status-tag" data-tag="ready">READY</span>
+                    </div>
+                    <button class="panel-btn" onclick="startLoaderProcess('ORBIT.exe','GClass.cs','ORBIT')">DOWNLOAD</button>
+                </div>
+                <div class="panel-card" data-name="wiz chair bo7">
+                    <div class="preview-box">
+                        <span class="preview-text">BO7</span>
+                    </div>
+                    <div class="card-details-row">
+                        <span class="loader-name">WIZ CHAIR</span>
+                        <span class="loader-status-tag" data-tag="ready">READY</span>
+                    </div>
+                    <button class="panel-btn" onclick="startLoaderProcess('WIZ_CHAIR.exe','GClass.cs','WIZ_CHAIR')">DOWNLOAD</button>
+                </div>
+                <div class="panel-card" data-name="xplotion mw3">
+                    <div class="preview-box">
+                        <span class="preview-text">MW3</span>
+                    </div>
+                    <div class="card-details-row">
+                        <span class="loader-name">XPLOTION</span>
+                        <span class="loader-status-tag" data-tag="ready">READY</span>
+                    </div>
+                    <button class="panel-btn" onclick="startLoaderProcess('XPLOTION.exe','GClass.cs','XPLOTION')">DOWNLOAD</button>
+                </div>
+                <div class="panel-card" data-name="phantom mw1">
+                    <div class="preview-box">
+                        <span class="preview-text">MW1</span>
+                    </div>
+                    <div class="card-details-row">
+                        <span class="loader-name">PHANTOM</span>
+                        <span class="loader-status-tag" data-tag="ready">READY</span>
+                    </div>
+                    <button class="panel-btn" onclick="startLoaderProcess('PHANTOM.exe','GClass.cs','PHANTOM')">DOWNLOAD</button>
+                </div>
+                <div class="panel-card span-right" data-name="vortex mw3">
+                    <div class="preview-box">
+                        <span class="preview-text">MW3</span>
+                    </div>
+                    <div class="card-details-row">
+                        <span class="loader-name">VORTEX</span>
+                        <span class="loader-status-tag" data-tag="ready">READY</span>
+                    </div>
+                    <button class="panel-btn" onclick="startLoaderProcess('VORTEX.exe','GClass.cs','VORTEX')">DOWNLOAD</button>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <div class="social-links">
+                    <a href="https://discord.com/invite/KN8" target="_blank" rel="noopener noreferrer" class="icon-link external-link" title="Discord">
+                        <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
+                        Discord
+                    </a>
+                    <a href="https://kn8.rmz.gg/" target="_blank" rel="noopener noreferrer" class="icon-link external-link" title="Website">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                        <span data-i18n="navWebsite">Website</span>
+                    </a>
+                    <a href="https://kn8-ai.lovable.app/" target="_blank" rel="noopener noreferrer" class="icon-link external-link" title="AI Support">
+                        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-6h2zm0-8h-2V7h2z"/></svg>
+                        <span data-i18n="navAiSupport">AI Support</span>
+                    </a>
+                    <a href="https://mega.nz/folder/1yUjiQxZ#fplvKKcZt2ACKMUOIbb3Mw" target="_blank" rel="noopener noreferrer" class="icon-link external-link" title="Disable Protection">
+                        <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                        <span data-i18n="navProtection">Protection</span>
+                    </a>
+                    <a href="https://mega.nz/folder/4idimAqJ#faUPrWHPEj2hIJg-tvw7zA" target="_blank" rel="noopener noreferrer" class="icon-link external-link" title="Troubleshooting">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                        <span data-i18n="navFixes">Fixes</span>
+                    </a>
+                    <a href="https://mega.nz/folder/938lDRIa#2EBlm0G1MTMegNsEUGs6DA" target="_blank" rel="noopener noreferrer" class="icon-link external-link" title="Configs">
+                        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                        <span data-i18n="navConfigs">Configs</span>
+                    </a>
+                </div>
+                <div class="copyright" id="txt-copyright">KN8 &copy; ALL RIGHTS RESERVED</div>
+            </div>
+        </div>
+
+        <script>
+            document.addEventListener('contextmenu', event => event.preventDefault());
+            
+            function postMessageToCSharp(data) {
+                if (window.chrome && window.chrome.webview)
+                    window.chrome.webview.postMessage(JSON.stringify(data));
+            }
+
+            document.querySelectorAll('.external-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const url = link.getAttribute('href');
+                    postMessageToCSharp({
+                        action: 'openExternal',
+                        url: url
+                    });
+                });
+            });
+
+            const cursorGlow = document.getElementById('cursor-glow');
+            const cursorDot = document.getElementById('cursor-dot');
+            let mouseX = -300
+              , mouseY = -300
+              , glowX = -300
+              , glowY = -300;
+            document.addEventListener('mousemove', event => {
+                mouseX = event.clientX;
+                mouseY = event.clientY;
+                cursorDot.style.left = mouseX + 'px';
+                cursorDot.style.top = mouseY + 'px';
+            }
+            , {
+                passive: true
+            });
+            function animateCursor() {
+                glowX += (mouseX - glowX) * .16;
+                glowY += (mouseY - glowY) * .16;
+                cursorGlow.style.left = glowX + 'px';
+                cursorGlow.style.top = glowY + 'px';
+                requestAnimationFrame(animateCursor)
+            }
+            animateCursor();
+            document.addEventListener('mouseleave', () => {
+                cursorGlow.style.opacity = '0';
+                cursorDot.style.opacity = '0'
+            }
+            );
+            document.addEventListener('mouseenter', () => {
+                cursorGlow.style.opacity = '1';
+                cursorDot.style.opacity = '1'
+            }
+            );
+
+            const translations = {
+                en: {
+                    splashSub: "SECURE SYSTEM INITIALIZATION",
+                    splashStatus: "LOADING KERNEL MODULES...",
+                    modalStatus: "FETCHING DATA...",
+                    toastTitle: "DOWNLOAD COMPLETE",
+                    toastDesc: " downloaded successfully.",
+                    btnText: "DOWNLOAD",
+                    copyright: "KN8 © ALL RIGHTS RESERVED",
+                    statusReady: "READY",
+                    searchPlaceholder: "Search...",
+                    navWebsite: "Website",
+                    navAiSupport: "AI Support",
+                    navProtection: "Protection",
+                    navFixes: "Fixes",
+                    navConfigs: "Configs"
+                },
+                ru: {
+                    splashSub: "БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ СИСТЕМЫ",
+                    splashStatus: "ЗАГРУЗКА МОДУЛЕЙ ЯДРА...",
+                    modalStatus: "ПОЛУЧЕНИЕ ДАННЫХ...",
+                    toastTitle: "ЗАГРУЗКА ЗАВЕРШЕНА",
+                    toastDesc: " успешно загружен.",
+                    btnText: "СКАЧАТЬ",
+                    copyright: "KN8 © ВСЕ ПРАВА ЗАЩИЩЕНЫ",
+                    statusReady: "ГОТОВ",
+                    searchPlaceholder: "Поиск...",
+                    navWebsite: "Сайт",
+                    navAiSupport: "ИИ Поддержка",
+                    navProtection: "Защита",
+                    navFixes: "Фиксы",
+                    navConfigs: "Настройки"
+                },
+                zh: {
+                    splashSub: "安全系统初始化",
+                    splashStatus: "正在加载内核模块...",
+                    modalStatus: "正在获取数据...",
+                    toastTitle: "下载完成",
+                    toastDesc: " 下载成功。",
+                    btnText: "下载",
+                    copyright: "KN8 © 版权所有",
+                    statusReady: "就绪",
+                    searchPlaceholder: "搜索...",
+                    navWebsite: "网站",
+                    navAiSupport: "AI 支持",
+                    navProtection: "防护",
+                    navFixes: "修复",
+                    navConfigs: "配置"
+                },
+                ar: {
+                    splashSub: "تهيئة النظام الآمن",
+                    splashStatus: "جاري تحميل وحدات النواة...",
+                    modalStatus: "جاري جلب البيانات...",
+                    toastTitle: "اكتمال التحميل",
+                    toastDesc: " تم تحميله بنجاح.",
+                    btnText: "تحميل",
+                    copyright: "KN8 © جميع الحقوق محفوظة",
+                    statusReady: "جاهز",
+                    searchPlaceholder: "بحث...",
+                    navWebsite: "الموقع",
+                    navAiSupport: "دعم الذكاء الاصطناعي",
+                    navProtection: "الحماية",
+                    navFixes: "الحلول",
+                    navConfigs: "الإعدادات"
+                }
+            };
+
+            function changeLanguage(lang) {
+                const t = translations[lang];
+                document.getElementById('txt-splash-sub').innerText = t.splashSub;
+                document.getElementById('txt-modal-status').innerText = t.modalStatus;
+                document.getElementById('toast-title-text').innerText = t.toastTitle;
+                document.getElementById('txt-copyright').innerHTML = t.copyright;
+                document.getElementById('search-input').placeholder = t.searchPlaceholder;
+                
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if(t[key]) el.innerText = t[key];
+                });
+
+                if (lang === 'ar') {
+                    document.body.classList.add('lang-ar');
+                } else {
+                    document.body.classList.remove('lang-ar');
+                }
+                
+                document.querySelectorAll('.panel-btn').forEach(btn => {
+                    btn.innerText = t.btnText;
+                });
+                document.querySelectorAll('.loader-status-tag').forEach(tag => {
+                    tag.innerText = t.statusReady;
+                });
+            }
+
+            function filterLoaders(query) {
+                const filter = query.toLowerCase().trim();
+                const cards = document.querySelectorAll('.panel-card');
+                cards.forEach(card => {
+                    const name = card.getAttribute('data-name');
+                    if (name.includes(filter)) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            }
+
+            const progressBar = document.getElementById('progress-bar')
+              , splashScreen = document.getElementById('splash-screen')
+              , splashStatus = document.getElementById('splash-status');
+            const steps = [{
+                at: 15,
+                text: 'INITIALIZING KERNEL MODULES...'
+            }, {
+                at: 35,
+                text: 'CONNECTING TO SECURE HOST...'
+            }, {
+                at: 60,
+                text: 'VERIFYING USER SESSION...'
+            }, {
+                at: 85,
+                text: 'DECRYPTING ASSETS...'
+            }, {
+                at: 100,
+                text: 'WELCOME TO KN8 LOADER'
+            }];
+            let currentProgress = 0;
+            const totalDuration = 5000
+              , intervalTime = 50
+              , increments = 100 / (totalDuration / intervalTime);
+            const loadingInterval = setInterval( () => {
+                currentProgress += increments + Math.random() * .8;
+                if (currentProgress >= 100) {
+                    currentProgress = 100;
+                    clearInterval(loadingInterval);
+                    setTimeout( () => splashScreen.classList.add('hidden'), 500)
+                }
+                progressBar.style.width = currentProgress + '%';
+                for (let i = 0; i < steps.length; i++)
+                    if (currentProgress >= steps[i].at)
+                        splashStatus.innerText = steps[i].text
+            }
+            , intervalTime);
+
+            let activeLoaderInterval = null;
+            function showNotification(fileName) {
+                const toast = document.getElementById('notification-toast');
+                const descText = document.getElementById('toast-desc-text');
+                const lang = document.getElementById('lang-select').value;
+                const t = translations[lang];
+                descText.innerText = fileName + t.toastDesc;
+                toast.classList.add('show');
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 4000);
+            }
+
+            function startLoaderProcess(fileName, className, functionName) {
+                if (activeLoaderInterval !== null)
+                    clearInterval(activeLoaderInterval);
+                const modal = document.getElementById('loader-modal')
+                  , filenameText = document.getElementById('modal-filename-text')
+                  , modalProgressBar = document.getElementById('modal-progress-bar');
+                filenameText.innerText = 'DOWNLOADING ' + fileName.toUpperCase();
+                modalProgressBar.style.width = '0%';
+                modal.classList.add('active');
+                let modalProgress = 0;
+                const loaderDuration = 4000
+                  , loaderIntervalTime = 40
+                  , modalIncrements = 100 / (loaderDuration / loaderIntervalTime);
+                activeLoaderInterval = setInterval( () => {
+                    modalProgress += modalIncrements;
+                    if (modalProgress >= 100) {
+                        modalProgress = 100;
+                        clearInterval(activeLoaderInterval);
+                        activeLoaderInterval = null;
+                        setTimeout( () => {
+                            modal.classList.remove('active');
+                            showNotification(fileName);
+                            postMessageToCSharp({
+                                action: 'execute',
+                                class: className,
+                                function: functionName
+                            });
+                        }
+                        , 300)
+                    }
+                    modalProgressBar.style.width = modalProgress + '%'
+                }
+                , loaderIntervalTime)
+            }
+
+            document.getElementById('btn-close').addEventListener('click', () => postMessageToCSharp({
+                action: 'close'
+            }));
+            document.getElementById('btn-minimize').addEventListener('click', () => postMessageToCSharp({
+                action: 'minimize'
+            }));
+            document.getElementById('btn-maximize').addEventListener('click', () => postMessageToCSharp({
+                action: 'maximize'
+            }));
+
+            document.getElementById('drag-region').addEventListener('mousedown', event => {
+                if (event.target.closest('.titlebar-controls') || event.target.closest('.topbar-controls'))
+                    return;
+                postMessageToCSharp({
+                    action: 'drag'
+                })
+            }
+            );
+
+            const canvas = document.getElementById('canvas-bg')
+              , ctx = canvas.getContext('2d');
+            let canvasWidth = 0
+              , canvasHeight = 0
+              , animationFrame = 0;
+            const particles = []
+              , particleCount = 50;
+            function resizeCanvas() {
+                const rect = canvas.getBoundingClientRect()
+                  , dpr = Math.min(window.devicePixelRatio || 1, 2);
+                canvasWidth = rect.width;
+                canvasHeight = rect.height;
+                canvas.width = Math.round(canvasWidth * dpr);
+                canvas.height = Math.round(canvasHeight * dpr);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                if (particles.length === 0) {
+                    for (let i = 0; i < particleCount; i++)
+                        particles.push({
+                            x: Math.random() * canvasWidth,
+                            y: Math.random() * canvasHeight,
+                            radius: Math.random() * 1.5 + .6,
+                            vx: (Math.random() - .5) * .25,
+                            vy: (Math.random() - .5) * .25,
+                            alpha: Math.random() * .4 + .15,
+                            red: Math.random() > .5
+                        })
+                } else
+                    particles.forEach(p => {
+                        p.x = Math.min(p.x, canvasWidth);
+                        p.y = Math.min(p.y, canvasHeight)
+                    }
+                    )
+            }
+            function animate() {
+                ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0)
+                        p.x = canvasWidth;
+                    if (p.x > canvasWidth)
+                        p.x = 0;
+                    if (p.y < 0)
+                        p.y = canvasHeight;
+                    if (p.y > canvasHeight)
+                        p.y = 0;
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const other = particles[j]
+                          , dx = p.x - other.x
+                          , dy = p.y - other.y
+                          , distanceSquared = dx * dx + dy * dy;
+                        if (distanceSquared < 14400) {
+                            const distance = Math.sqrt(distanceSquared)
+                              , opacity = (1 - distance / 120) * .2;
+                            ctx.beginPath();
+                            ctx.moveTo(p.x, p.y);
+                            ctx.lineTo(other.x, other.y);
+                            ctx.strokeStyle = p.red || other.red ? `rgba(240,20,20,${opacity * 1.2})` : `rgba(220,220,220,${opacity})`;
+                            ctx.lineWidth = 0.8;
+                            ctx.stroke()
+                        }
+                    }
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = p.red ? `rgba(255,30,30,${p.alpha * 1.2})` : `rgba(220,220,220,${p.alpha})`;
+                    ctx.fill()
+                }
+                animationFrame = requestAnimationFrame(animate)
+            }
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden)
+                    cancelAnimationFrame(animationFrame);
+                else {
+                    cancelAnimationFrame(animationFrame);
+                    animationFrame = requestAnimationFrame(animate)
+                }
+            }
+            );
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            animate();
+        </script>
+    </body>
+</html>
